@@ -14,23 +14,27 @@ server = Server('http://api.opensubtitles.org/xml-rpc')
 loginInfo = server.LogIn('', '', 'en', 'OSTestUserAgent')
 token = loginInfo['token']
 # TODO error handling
-language = 'eng' # TODO language input from user
-
+language = 'eng'  # TODO language input from user
 
 for serie in series:
     name = serie.split('/')[-1]
     print 'name', name
     # TODO request personal uagent
-    subResults = server.SearchSubtitles(token['token'], [{'sublanguageid': language, 'query': name}])
-    chosenSub = ''
+    subResults = server.SearchSubtitles(token, [{'sublanguageid': language, 'query': name}])
+    subs = ''
+    i = 0
+    print 'subresults', subResults
     for sub in subResults['data']:
         print 'found subtitles', sub
-        # TODO generate dialog to choose which subtitle should be downloaded
-        # chosenSub =
-
-    b64zipdata = server.DownloadSubtitles(token, [subResults['data'][0]['IDSubtitleFile']]) #TODO replace arguments with user input
+        subs += ' ' + str(i)
+        subs += ' \'' + sub['SubFileName'] + '\''
+        i += 1
+    chosensub = int(check_output('cd ~/Downloads/Torrents/SERIES && zenity --list --column=ID --column=Subtitle%s' % subs,
+                             shell=True).rstrip().split("|")[0])
+    print chosensub
+    b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
     # TODO error handling
-    # print 'b64zipdata', b64zipdata
+    print 'b64zipdata', b64zipdata
     zipdata = b64decode(b64zipdata['data'][0]['data'])
     # print 'zipdata', zipdata
     zipfile = gzip.open('%s.gz' % name[:-4], 'w')
@@ -54,5 +58,3 @@ for serie in series:
 # "episode" => 'episode number', 'tag' => tag ),array(...)), array('limit' => 500))
 
 # array DownloadSubtitles( $token, array($IDSubtitleFile, $IDSubtitleFile,...) )
-
-
