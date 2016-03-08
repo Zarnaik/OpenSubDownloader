@@ -16,6 +16,7 @@ loginInfo = server.LogIn('', '', 'en', 'OSTestUserAgent')
 token = loginInfo['token']
 # TODO error handling
 language = 'eng'  # TODO language input from user
+# TODO directory handling (arg?)
 
 for serie in series:
     name = serie.split('/')[-1]
@@ -30,12 +31,18 @@ for serie in series:
         subs += ' ' + str(i)
         subs += ' \'' + sub['SubFileName'] + '\''
         i += 1
-    # TODO change windows size
-    chosensub = int(check_output('cd ~/Downloads/Torrents/SERIES && zenity --list --column=ID --column=Subtitle%s' % subs,
-                             shell=True).rstrip().split("|")[0])
+
+    # TODO continue if none selected
+    chosensub = int(check_output('cd ~/Downloads/Torrents/SERIES && zenity --text=\'Video file: <b>%s</b>\' '
+                                 '--height=570 --width=500 --list --column=ID --column=Subtitle%s' % (name, subs),
+                                 shell=True).rstrip().split("|")[0])
     print chosensub
     b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
-    # TODO error handling
+    print b64zipdata
+    if (int(b64zipdata['status'].split(' ')[0]) != 200):
+        check_output('zenity --error --text=\'%s\'' % b64zipdata['status'])
+        continue
+        # TODO error handling sufficient?
     zipdata = b64decode(b64zipdata['data'][0]['data'])
     with open('%s.gz' % name[:-4], 'w') as zipfile:
         zipfile.write(zipdata)
