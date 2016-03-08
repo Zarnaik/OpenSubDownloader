@@ -4,7 +4,8 @@ from subprocess import check_output
 from xmlrpclib import Server
 import gzip
 
-# TODO document code
+# TODO code documentation/cleanup
+# TODO support arguments (login, langage, ...)
 
 # read in the file(s) for which subtitles are needed
 series = check_output('cd ~/Downloads/Torrents/SERIES && zenity --file-selection --multiple',
@@ -29,32 +30,20 @@ for serie in series:
         subs += ' ' + str(i)
         subs += ' \'' + sub['SubFileName'] + '\''
         i += 1
+    # TODO change windows size
     chosensub = int(check_output('cd ~/Downloads/Torrents/SERIES && zenity --list --column=ID --column=Subtitle%s' % subs,
                              shell=True).rstrip().split("|")[0])
     print chosensub
     b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
     # TODO error handling
-    print 'b64zipdata', b64zipdata
     zipdata = b64decode(b64zipdata['data'][0]['data'])
-    # print 'zipdata', zipdata
-    zipfile = gzip.open('%s.gz' % name[:-4], 'w')
-    zipfile.write(zipdata)
-    zipfile.close()
-    zipfile = gzip.open('%s.gz' % name[:-4], 'r')
-    filedata = zipfile.read()
-    # print 'files', filedata
-    subtitle = open('%s.srt' % name[:-4], 'w')
-    subtitle.write(filedata)
-    subtitle.close()
-    zipfile.close()
+    with open('%s.gz' % name[:-4], 'w') as zipfile:
+        zipfile.write(zipdata)
+
+    with gzip.open('%s.gz' % name[:-4], 'rb') as infile:
+        with open('%s.srt' % name[:-4], 'w') as outfile:
+            for line in infile:
+                outfile.write(line)
+
     remove('%s.gz' % name[:-4])
 
-
-# Temporary documentation
-
-# array SearchSubtitles( $token, array(
-# array('sublanguageid' => $sublanguageid, 'moviehash' => $moviehash,
-# 'moviebytesize' => $moviesize, imdbid => $imdbid, query => 'movie name', "season" => 'season number',
-# "episode" => 'episode number', 'tag' => tag ),array(...)), array('limit' => 500))
-
-# array DownloadSubtitles( $token, array($IDSubtitleFile, $IDSubtitleFile,...) )
