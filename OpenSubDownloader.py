@@ -31,26 +31,33 @@ for serie in series:
         subs += ' ' + str(i)
         subs += ' \'' + sub['SubFileName'] + '\''
         i += 1
+    if i == 0 :
+        check_output('zenity --error --text=\'No subtitles found for video file: <b>%s</b>\'' % name, shell=True)
+    else:
+        chosensub = 0
+        # noinspection PyBroadException
+        try:
+            chosensub = int(check_output("cd ~/Downloads/Torrents/SERIES && zenity --text='Video file: <b>%s</b>' "
+                                         "--height=570 --width=500 --list --column=ID --column=Subtitle%s" % (name, subs),
+                                         shell=True).rstrip().split("|")[0])
+        except:
+            print 'canceled or other error'
+            continue
+        print chosensub
+        b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
+        print b64zipdata
+        if int(b64zipdata['status'].split(' ')[0]) != 200 :
+            check_output('zenity --error --text=\'%s\'' % b64zipdata['status'])
+            continue
+            # TODO error handling sufficient?
+        zipdata = b64decode(b64zipdata['data'][0]['data'])
+        with open('%s.gz' % name[:-4], 'w') as zipfile:
+            zipfile.write(zipdata)
 
-    # TODO continue if none selected
-    chosensub = int(check_output('cd ~/Downloads/Torrents/SERIES && zenity --text=\'Video file: <b>%s</b>\' '
-                                 '--height=570 --width=500 --list --column=ID --column=Subtitle%s' % (name, subs),
-                                 shell=True).rstrip().split("|")[0])
-    print chosensub
-    b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
-    print b64zipdata
-    if (int(b64zipdata['status'].split(' ')[0]) != 200):
-        check_output('zenity --error --text=\'%s\'' % b64zipdata['status'])
-        continue
-        # TODO error handling sufficient?
-    zipdata = b64decode(b64zipdata['data'][0]['data'])
-    with open('%s.gz' % name[:-4], 'w') as zipfile:
-        zipfile.write(zipdata)
+        with gzip.open('%s.gz' % name[:-4], 'rb') as infile:
+            with open('%s.srt' % name[:-4], 'w') as outfile:
+                for line in infile:
+                    outfile.write(line)
 
-    with gzip.open('%s.gz' % name[:-4], 'rb') as infile:
-        with open('%s.srt' % name[:-4], 'w') as outfile:
-            for line in infile:
-                outfile.write(line)
-
-    remove('%s.gz' % name[:-4])
+        remove('%s.gz' % name[:-4])
 
