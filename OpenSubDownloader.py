@@ -21,43 +21,56 @@ language = 'eng'  # TODO language input from user
 for serie in series:
     name = serie.split('/')[-1]
     print 'name', name
+    searchName = name
     # TODO request personal uagent
-    subResults = server.SearchSubtitles(token, [{'sublanguageid': language, 'query': name}])
+
+    while True:
+        subResults = server.SearchSubtitles(token, [{'sublanguageid': language, 'query': searchName}])
+        if len(subResults['data']) == 0 :
+            try:
+                check_output('zenity --question --text=\'No subtitles found for video file: <b>%s</b>\\n\\nContinue?\'' % name, shell=True)
+                break
+            except:
+                searchName = check_output('zenity --entry --text=\'Please enter the name you would like to search with.\' --entry-text=%s' % name, shell=True)
+                continue
+        else:
+            break;
+
     subs = ''
     i = 0
-    print 'subresults', subResults
+    print '#subs:', len(subResults['data']), ' *subresults', subResults
     for sub in subResults['data']:
         print 'found subtitles', sub
         subs += ' ' + str(i)
         subs += ' \'' + sub['SubFileName'] + '\''
         i += 1
-    if i == 0 :
-        check_output('zenity --error --text=\'No subtitles found for video file: <b>%s</b>\'' % name, shell=True)
-    else:
-        chosensub = 0
-        # noinspection PyBroadException
-        try:
-            chosensub = int(check_output("cd ~/Downloads/Torrents/SERIES && zenity --text='Video file: <b>%s</b>' "
-                                         "--height=570 --width=500 --list --column=ID --column=Subtitle%s" % (name, subs),
-                                         shell=True).rstrip().split("|")[0])
-        except:
-            print 'canceled or other error'
-            continue
-        print chosensub
-        b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
-        print b64zipdata
-        if int(b64zipdata['status'].split(' ')[0]) != 200 :
-            check_output('zenity --error --text=\'%s\'' % b64zipdata['status'])
-            continue
-            # TODO error handling sufficient?
-        zipdata = b64decode(b64zipdata['data'][0]['data'])
-        with open('%s.gz' % name[:-4], 'w') as zipfile:
-            zipfile.write(zipdata)
 
-        with gzip.open('%s.gz' % name[:-4], 'rb') as infile:
-            with open('%s.srt' % name[:-4], 'w') as outfile:
-                for line in infile:
-                    outfile.write(line)
+    if i == 0:  # if no subs were found and the user chose to continue, don't show an empty list
+        continue
 
-        remove('%s.gz' % name[:-4])
+    try:
+        chosensub = int(check_output("cd ~/Downloads/Torrents/SERIES && zenity --text='Video file: <b>%s</b>' "
+                                     "--height=570 --width=500 --list --column=ID --column=Subtitle%s" % (name, subs),
+                                     shell=True).rstrip().split("|")[0])
+    except:
+        print 'Canceled or other error due to not selecting a subtitle but continuing'
+        continue
+
+    print chosensub
+    b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
+    print b64zipdata
+    if int(b64zipdata['status'].split(' ')[0]) != 200:
+        check_output('zenity --error --text=\'%s\'' % b64zipdata['status'])
+        continue
+        # TODO error handling sufficient?
+    zipdata = b64decode(b64zipdata['data'][0]['data'])
+    with open('%s.gz' % name[:-4], 'w') as zipfile:
+        zipfile.write(zipdata)
+
+    with gzip.open('%s.gz' % name[:-4], 'rb') as infile:
+        with open('%s.srt' % name[:-4], 'w') as outfile:
+            for line in infile:
+                outfile.write(line)
+
+    remove('%s.gz' % name[:-4])
 
