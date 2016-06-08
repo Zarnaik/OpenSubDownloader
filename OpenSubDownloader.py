@@ -13,7 +13,7 @@ series = check_output('zenity --file-selection --multiple',
                       shell=True).rstrip().split("|")
 
 server = Server('http://api.opensubtitles.org/xml-rpc')
-loginInfo = server.LogIn('', '', 'en', 'OSTestUserAgent')     # TODO request personal uagent
+loginInfo = server.LogIn('', '', 'en', '0penSubDL')
 token = loginInfo['token']
 # TODO error handling
 language = 'eng'  # TODO language input from user
