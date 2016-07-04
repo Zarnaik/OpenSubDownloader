@@ -43,7 +43,7 @@ for serie in series:
     for sub in subResults['data']:
         print 'found subtitles', sub
         subs += ' ' + str(i)
-        subs += ' \'' + sub['SubFileName'] + '\''
+        subs += ' \'' + sub['SubFileName'].replace("'", "") + '\''
         i += 1
 
     if i == 0:  # if no subs were found and the user chose to continue, don't show an empty list
