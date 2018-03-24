@@ -39,11 +39,15 @@ for serie in series:
 
     subs = ''
     i = 0
-    print '#subs:', len(subResults['data']), ' *subresults', subResults
+    print '#subs:', len(subResults['data'])
     for sub in subResults['data']:
         print 'found subtitles', sub
         subs += ' ' + str(i)
-        subs += ' \'' + sub['SubFileName'].replace("'", "") + '\''
+        try:
+            subs += ' \'' + sub['SubFileName'].replace("'", "") + '\''
+        except:
+            print 'except case sub object' # changes output OS TODO fix?
+            subs += ' \'' + subResults['data'][sub]['SubFileName'].replace("'", "") + '\''
         i += 1
 
     if i == 0:  # if no subs were found and the user chose to continue, don't show an empty list
@@ -58,7 +62,11 @@ for serie in series:
         continue
 
     print chosensub
-    b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
+    try:
+        b64zipdata = server.DownloadSubtitles(token, [subResults['data'][chosensub]['IDSubtitleFile']])  # TODO replace arguments with user input
+    except:
+        print 'except case DownloadSubtitles' # changes output OS TODO fix?
+        b64zipdata = server.DownloadSubtitles(token, [subResults['data'][str(chosensub)]['IDSubtitleFile']])
     print b64zipdata
     if int(b64zipdata['status'].split(' ')[0]) != 200:
         check_output('zenity --error --text=\'%s\'' % b64zipdata['status'])
@@ -75,3 +83,4 @@ for serie in series:
 
     remove('%sgz' % saveName)
 
+print 'logout', server.LogOut(token)
